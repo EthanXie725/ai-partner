@@ -40,21 +40,7 @@ cd server && pnpm install && cd ..
 
 ### 配置
 
-```bash
-# 复制环境变量模板
-cp server/.env.example server/.env
-```
-
-然后编辑 `server/.env`，填入你的 MySQL 配置：
-
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=你的密码
-DB_NAME=friend
-PORT=3001
-```
+编辑 `server/.env`，填入你的 MySQL 密码等配置。
 
 ### 启动
 
@@ -103,7 +89,7 @@ node .\node_modules\vite\bin\vite.js
 │   ├── src/
 │   │   ├── db/           # 数据库连接与迁移
 │   │   └── routes/       # API 路由
-│   └── .env.example      # 环境变量模板
+│   └── .env              # 环境变量配置（已预设占位值）
 └── vite.config.ts
 ```
 

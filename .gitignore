@@ -2,5 +2,5 @@ node_modules/
 dist/
 dist-electron/
 data/
-.env
+.env              # 已用 git add -f + skip-worktree 提交占位版本
 *.db
