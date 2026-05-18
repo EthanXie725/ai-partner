@@ -12,6 +12,7 @@ export class DeepseekProvider implements AIProvider {
   }
 
   async *chat(messages: Message[], options?: ChatOptions): AsyncIterable<string> {
+    const model = options?.thinking ? 'deepseek-reasoner' : this.model
     const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
@@ -19,10 +20,10 @@ export class DeepseekProvider implements AIProvider {
         'Authorization': `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: this.model,
+        model,
         messages: messages.map(m => ({ role: m.role, content: m.content })),
         temperature: options?.temperature ?? 0.7,
-        max_tokens: options?.maxTokens ?? 2048,
+        max_tokens: options?.maxTokens ?? 4096,
         stream: false,
       }),
     })
@@ -33,7 +34,13 @@ export class DeepseekProvider implements AIProvider {
     }
 
     const data = await response.json()
+    const reasoning = data.choices?.[0]?.message?.reasoning_content
     const content = data.choices?.[0]?.message?.content ?? ''
+
+    // Only capture reasoning when thinking mode is explicitly enabled
+    if (reasoning && options?.thinking && options?.onReasoning) {
+      options.onReasoning(reasoning)
+    }
     yield content
   }
 

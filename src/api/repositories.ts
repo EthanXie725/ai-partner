@@ -1,4 +1,4 @@
-import type { Conversation, Message, Fact } from '@/types'
+import type { Conversation, Message, Fact, SearchResult } from '@/types'
 import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from './client'
 
 // --- Conversations ---
@@ -85,4 +85,11 @@ export async function createSemanticMemory(memory: {
 
 export async function deleteSemanticMemory(id: string): Promise<void> {
   await apiDelete(`/semantic-memories/${id}`)
+}
+
+// --- Web Search ---
+
+export async function searchWeb(query: string): Promise<SearchResult[]> {
+  const res = await apiPost<{ results: SearchResult[] }>('/search', { query })
+  return res.results
 }

@@ -7,6 +7,7 @@ import factsRouter from './routes/facts.js'
 import semanticMemoriesRouter from './routes/semantic-memories.js'
 import healthRouter from './routes/health.js'
 import proxyRouter from './routes/proxy.js'
+import searchRouter from './routes/search.js'
 
 const app = express()
 const PORT = parseInt(process.env.PORT || '3001', 10)
@@ -20,6 +21,7 @@ app.use('/api', factsRouter)
 app.use('/api', semanticMemoriesRouter)
 app.use('/api', healthRouter)
 app.use('/api', proxyRouter)
+app.use('/api', searchRouter)
 
 async function start() {
   try {

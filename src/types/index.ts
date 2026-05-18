@@ -38,6 +38,8 @@ export interface SemanticMemory {
 export interface ChatOptions {
   temperature?: number
   maxTokens?: number
+  thinking?: boolean
+  onReasoning?: (text: string) => void
 }
 
 export interface AIProvider {
@@ -70,4 +72,12 @@ export interface AppConfig {
     model: string
   }
   embedding: EmbedConfig
+  enableWebSearch: boolean
+  enableThinking: boolean
+}
+
+export interface SearchResult {
+  title: string
+  url: string
+  content: string
 }

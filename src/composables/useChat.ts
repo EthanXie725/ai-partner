@@ -1,6 +1,8 @@
 import { ref } from 'vue'
-import type { Conversation, Message } from '@/types'
+import type { Conversation, Message, SearchResult } from '@/types'
 import { useApp } from './useApp'
+import { searchWeb } from '@/api/repositories'
+import { loadConfig } from '@/config'
 
 export function useChat() {
   const conversations = ref<Conversation[]>([])
@@ -8,6 +10,11 @@ export function useChat() {
   const isLoading = ref(false)
   const activeConversationId = ref<string | null>(null)
   const error = ref<string | null>(null)
+  const searchStatus = ref<'idle' | 'searching' | 'done' | 'failed'>('idle')
+  const searchResultCount = ref(0)
+  const messageSearchResults = ref<Record<string, SearchResult[]>>({})
+  const messageReasoning = ref<Record<string, string>>({})
+  const reasoningContent = ref('')
 
   async function loadConversations() {
     const app = useApp()
@@ -81,9 +88,33 @@ export function useChat() {
     const recentHistory = history.slice(0, -1)
 
     let fullResponse = ''
+
+    // Web search (if enabled)
+    let searchResults: SearchResult[] | undefined
+    const config = loadConfig()
+    if (config.enableWebSearch) {
+      searchStatus.value = 'searching'
+      searchResultCount.value = 0
+      try {
+        searchResults = await searchWeb(text)
+        searchResultCount.value = searchResults?.length ?? 0
+        searchStatus.value = searchResults && searchResults.length > 0 ? 'done' : 'failed'
+      } catch (e) {
+        console.error('[search] failed:', e)
+        searchStatus.value = 'failed'
+      }
+    }
+
+    // Capture reasoning content
+    let currentReasoning = ''
+
     try {
       if (app.memoryManager) {
-        for await (const chunk of app.memoryManager.chatWithMemory(recentHistory, text)) {
+        const opts = {
+          thinking: config.enableThinking,
+          onReasoning: (text: string) => { currentReasoning = text },
+        }
+        for await (const chunk of app.memoryManager.chatWithMemory(recentHistory, text, searchResults, opts.thinking, opts.onReasoning)) {
           fullResponse += chunk
         }
       } else {
@@ -111,6 +142,14 @@ export function useChat() {
 
     messages.value = [...messages.value, assistantMsg]
 
+    // Store search results and reasoning for this message
+    if (searchResults && searchResults.length > 0) {
+      messageSearchResults.value[assistantMsg.id] = searchResults
+    }
+    if (currentReasoning) {
+      messageReasoning.value[assistantMsg.id] = currentReasoning
+    }
+
     // Async: extract memories
     app.memoryManager?.processTurn(text, fullResponse, conversationId, assistantMsg.id)
 
@@ -120,7 +159,8 @@ export function useChat() {
   }
 
   return {
-    conversations, messages, isLoading, error,
+    conversations, messages, isLoading, error, searchStatus, searchResultCount,
+    messageSearchResults, messageReasoning,
     activeConversationId,
     loadConversations, selectConversation,
     newConversation, sendMessage, loadMessages,

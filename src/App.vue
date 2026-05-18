@@ -13,7 +13,8 @@ const showMemory = ref(false)
 const showSettings = ref(false)
 
 const {
-  conversations, messages, isLoading, error,
+  conversations, messages, isLoading, error, searchStatus, searchResultCount,
+  messageSearchResults, messageReasoning,
   activeConversationId,
   loadConversations, selectConversation,
   newConversation, sendMessage,
@@ -57,6 +58,10 @@ onMounted(async () => {
           :messages="messages"
           :is-loading="isLoading"
           :error="error"
+          :search-status="searchStatus"
+          :search-result-count="searchResultCount"
+          :message-search-results="messageSearchResults"
+          :message-reasoning="messageReasoning"
           @send="(t: string) => sendMessage(t)"
         />
       </main>

@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import MessageBubble from './MessageBubble.vue'
-import type { Message } from '@/types'
+import type { Message, SearchResult } from '@/types'
+import { loadConfig, saveConfig } from '@/config'
 
 const props = defineProps<{
   conversationId: string | null
   messages: Message[]
   isLoading: boolean
   error: string | null
+  searchStatus: 'idle' | 'searching' | 'done' | 'failed'
+  searchResultCount: number
+  messageSearchResults: Record<string, SearchResult[]>
+  messageReasoning: Record<string, string>
 }>()
 
 const emit = defineEmits<{
@@ -17,6 +22,24 @@ const emit = defineEmits<{
 const inputText = ref('')
 const messagesContainer = ref<HTMLElement>()
 const textareaRef = ref<HTMLTextAreaElement>()
+
+const config = loadConfig()
+const webSearchEnabled = ref(config.enableWebSearch)
+const thinkingEnabled = ref(config.enableThinking)
+
+function toggleWebSearch() {
+  webSearchEnabled.value = !webSearchEnabled.value
+  const cfg = loadConfig()
+  cfg.enableWebSearch = webSearchEnabled.value
+  saveConfig(cfg)
+}
+
+function toggleThinking() {
+  thinkingEnabled.value = !thinkingEnabled.value
+  const cfg = loadConfig()
+  cfg.enableThinking = thinkingEnabled.value
+  saveConfig(cfg)
+}
 
 watch(
   () => props.messages.length,
@@ -82,7 +105,13 @@ function handleKeydown(e: KeyboardEvent) {
       <template v-else>
         <div ref="messagesContainer" class="messages-area">
           <div class="messages-inner">
-            <MessageBubble v-for="msg in messages" :key="msg.id" :message="msg" />
+            <MessageBubble
+              v-for="msg in messages"
+              :key="msg.id"
+              :message="msg"
+              :search-results="messageSearchResults[msg.id] || []"
+              :reasoning="messageReasoning[msg.id] || ''"
+            />
 
             <!-- Typing -->
             <div v-if="isLoading" class="typing-indicator">
@@ -103,6 +132,35 @@ function handleKeydown(e: KeyboardEvent) {
 
       <!-- Input Area -->
       <div class="input-area">
+        <div class="input-toolbar">
+          <button
+            class="search-toggle"
+            :class="{ active: webSearchEnabled }"
+            @click="toggleWebSearch"
+            :title="webSearchEnabled ? '联网搜索已开启' : '联网搜索已关闭'"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+            </svg>
+            <span>联网搜索</span>
+          </button>
+          <span v-if="searchStatus === 'searching'" class="search-status searching">搜索中…</span>
+          <span v-else-if="searchStatus === 'done'" class="search-status done">已搜索到 {{ searchResultCount }} 条结果</span>
+          <span v-else-if="searchStatus === 'failed'" class="search-status failed">搜索无结果</span>
+          <div class="toolbar-spacer" />
+          <button
+            class="thinking-toggle"
+            :class="{ active: thinkingEnabled }"
+            @click="toggleThinking"
+            :title="thinkingEnabled ? '深度思考已开启' : '深度思考已关闭'"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a10 10 0 1010 10M12 2v4M12 2l3 3M12 2l-3 3M22 12h-4M22 12l-3-3M22 12l-3 3"/>
+            </svg>
+            <span>深度思考</span>
+          </button>
+        </div>
         <div class="input-inner">
           <textarea
             ref="textareaRef"
@@ -230,7 +288,15 @@ function handleKeydown(e: KeyboardEvent) {
 
 /* Input */
 .input-area {
-  padding: 8px 16px 16px;
+  padding: 0 16px 16px;
+}
+
+.input-toolbar {
+  max-width: 700px;
+  margin: 0 auto 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .input-inner {
@@ -276,6 +342,95 @@ function handleKeydown(e: KeyboardEvent) {
   color: #fff;
   cursor: pointer;
   transition: background 0.15s;
+}
+
+.search-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.search-toggle:hover {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.search-toggle.active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #3b82f6;
+}
+
+.search-toggle.active:hover {
+  background: #dbeafe;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.thinking-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.thinking-toggle:hover {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.thinking-toggle.active {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #d97706;
+}
+
+.thinking-toggle.active:hover {
+  background: #fde68a;
+}
+
+.search-status {
+  font-size: 12px;
+  transition: opacity 0.2s;
+}
+
+.search-status.searching {
+  color: #3b82f6;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.search-status.done {
+  color: #10b981;
+}
+
+.search-status.failed {
+  color: #9ca3af;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .send-btn:hover:not(:disabled) {

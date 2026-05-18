@@ -113,6 +113,20 @@ function save() {
 
       <hr class="divider" />
 
+      <!-- Web Search -->
+      <div class="field">
+        <label class="field-label">联网搜索</label>
+        <label class="toggle-row">
+          <input type="checkbox" v-model="config.enableWebSearch" class="toggle-input" />
+          <span class="toggle-track">
+            <span class="toggle-thumb" />
+          </span>
+          <span class="toggle-text">{{ config.enableWebSearch ? '已开启' : '已关闭' }}</span>
+        </label>
+      </div>
+
+      <hr class="divider" />
+
       <button class="save-btn" @click="save">
         {{ saved ? '已保存 ✓' : '保存' }}
       </button>
@@ -166,6 +180,52 @@ function save() {
 
 .text-input::placeholder {
   color: #d1d5db;
+}
+
+/* Toggle switch */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.toggle-input {
+  display: none;
+}
+
+.toggle-track {
+  width: 40px;
+  height: 22px;
+  background: #d1d5db;
+  border-radius: 11px;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle-input:checked + .toggle-track {
+  background: #3b82f6;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle-input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(18px);
+}
+
+.toggle-text {
+  font-size: 14px;
+  color: #374151;
 }
 
 .fields-group {

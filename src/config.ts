@@ -25,6 +25,8 @@ const defaults: AppConfig = {
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode',
     model: 'text-embedding-v4',
   },
+  enableWebSearch: false,
+  enableThinking: false,
 }
 
 export function loadConfig(): AppConfig {
